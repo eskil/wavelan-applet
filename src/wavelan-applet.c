@@ -37,6 +37,13 @@
 #include <eel/eel-label.h>
 #include <eel/eel-gdk-pixbuf-extensions.h>
 
+#define CFG_DEVICE "eth0"
+#define CFG_SHOW_PERCENT "FALSE"
+#define CFG_SHOW_DIALOGS "FALSE"
+#define CFG_UPDATE_INTERVAL "2"
+#define CFG_TEXT_AA "TRUE"
+#define CFG_THEME "default"
+
 typedef struct {
 	gchar *device;
 	gchar *theme;
@@ -48,27 +55,20 @@ typedef struct {
 	gint smooth_font_size;
 	GList *devices;
 	GList *themes;
+
+	/* contains a glist of char*, pointing to available images for the current theme */
+	GList *images;
+	/* contains a list of char*, pointing to the themes no-link-XX images (if any) */
+	GList *no_link_images;
+	/* contains a list of char*, pointing to the themes broken-XX images (if any) */
+	GList *broken_images;
+	/* contains pointers into the images GList. 0-100 are for battery, 101-201 are for AC */
+	char *pixmaps[101];
+	/* pointer to the current used file name */
+	char *current_pixmap;
+	/* set to true when the applet is display animated connection loss */
+	gboolean flashing;
 } Properties;
-
-typedef enum { 
-	NO_LINK = 0, 
-	SOME_LINK = 1, 
-	OK_LINK = 2, 
-	GOOD_LINK = 3,  
-	REALLY_GOOD_LINK = 4,
-	BUSTED_LINK = 5,
-	LAST_STATE = 6
-} WaveLanState;
-
-char *pixmap_files[] = 
-{
-    "no-link",
-    "some-link",
-    "ok-link",
-    "good-link",
-    "really-good-link",
-    "busted-link"
-};
 
 char *pixmap_extensions[] = 
 {
@@ -76,6 +76,12 @@ char *pixmap_extensions[] =
 	"xpm",
 	NULL
 };
+
+typedef enum {
+	BUSTED_LINK,
+	NO_LINK,	
+	NONE
+} AnimationState;
 
 static GtkWidget *global_property_box = NULL;
 static GtkWidget *global_applet = NULL;
@@ -127,19 +133,16 @@ do_draw (GtkWidget *applet, gpointer data) {
 
 static void 
 wavelan_applet_draw (GtkWidget *applet, 
-		     WaveLanState org_state, WaveLanState new_state, 
-		     double pct)
+		     int percent)
 {
 	GtkWidget *pixmap;
 	GtkWidget *pct_label;
 	Properties *props;
-	char **pixmaps;
 
 	props = gtk_object_get_data (GTK_OBJECT (applet), "properties");
 	pct_label = GTK_WIDGET (gtk_object_get_data (GTK_OBJECT (applet), "percent-label"));
 
 	pixmap = GTK_WIDGET (gtk_object_get_data (GTK_OBJECT (applet), "pixmap"));
-	pixmaps = (char**)gtk_object_get_data (GTK_OBJECT (applet), "pixmaps");
 
 	if (!GTK_WIDGET_REALIZED (pixmap)) {
 		show_warning_dialog ("WaveLan applet widget not realised");
@@ -150,8 +153,8 @@ wavelan_applet_draw (GtkWidget *applet,
 	/* Update the percentage */
 	if (props->show_percent) {
 		char *tmp;
-		if (pct >= 0) {
-			tmp = g_strdup_printf ("%2.0f%%", pct);
+		if (percent >= 0) {
+			tmp = g_strdup_printf ("%2.0d%%", percent);
 		} else {
 			tmp = g_strdup_printf ("N/A");
 		}
@@ -162,8 +165,100 @@ wavelan_applet_draw (GtkWidget *applet,
 	}
 
 	/* Update the image */
-	if (org_state != new_state) {
-		eel_image_set_pixbuf_from_file_name (EEL_IMAGE (pixmap), pixmaps[new_state]);
+	if (percent >= 0 && percent <= 100) {
+		g_message ("%p != %p = %s", 
+			   props->pixmaps[percent], props->current_pixmap, 
+			   props->pixmaps[percent] != props->current_pixmap ? "TRUE" : "FALSE");
+
+		if (props->pixmaps[percent] != props->current_pixmap) {
+			props->current_pixmap = props->pixmaps[percent];
+			if ( !props->flashing) {
+				eel_image_set_pixbuf_from_file_name (EEL_IMAGE (pixmap), props->current_pixmap);
+			}
+			g_message ("loading image %d = %s",
+				   percent,
+				   props->current_pixmap);
+		}
+	} 
+}
+
+
+static gboolean
+wavelan_applet_animate_timeout (GtkWidget *applet) 
+{	
+	static int num = 0;
+	Properties *properties;
+	GtkWidget *pixmap;
+	GList *image;
+	GList *animation_list = NULL;
+	AnimationState state = GPOINTER_TO_INT (gtk_object_get_data (GTK_OBJECT (applet), "animation_state"));
+	
+	properties = gtk_object_get_data (GTK_OBJECT (applet), "properties");
+
+	switch (state) {
+	case NO_LINK:
+		animation_list = properties->no_link_images;
+		break;
+	case BUSTED_LINK:
+		animation_list = properties->broken_images;
+		break;
+	default:
+		g_assert_not_reached ();
+		break;
+	};
+
+	pixmap = GTK_WIDGET (gtk_object_get_data (GTK_OBJECT (applet), "pixmap"));
+	if (num >= g_list_length (animation_list)) {
+		num = 0;
+	}
+
+	image = g_list_nth (animation_list, num);
+	g_message ("animating %d of %d to %s", num, g_list_length (animation_list), (char*)image->data);
+	eel_image_set_pixbuf_from_file_name (EEL_IMAGE (pixmap), (char*)image->data);	
+	num++;
+
+	return TRUE;
+}
+
+static void
+wavelan_applet_start_animation (GtkWidget *applet) 
+{
+	GtkWidget *pixmap;
+	guint timeout_handler_id;
+
+	timeout_handler_id = gtk_timeout_add (500, 
+					      (GtkFunction)wavelan_applet_animate_timeout,
+					      applet);
+	pixmap = GTK_WIDGET (gtk_object_get_data (GTK_OBJECT (applet), "pixmap"));
+	gtk_object_set_data (GTK_OBJECT (applet), 
+			     "animate_timer", 
+			     GINT_TO_POINTER (timeout_handler_id));
+}
+
+static void
+wavelan_applet_stop_animation (GtkWidget *applet) 
+{
+	GtkWidget *pixmap;
+	guint timeout_handler_id = GPOINTER_TO_INT (gtk_object_get_data (GTK_OBJECT (applet),
+									 "animate_timer"));
+	Properties *properties;
+
+	properties = gtk_object_get_data (GTK_OBJECT (applet), "properties");
+	gtk_timeout_remove (timeout_handler_id);
+	pixmap = GTK_WIDGET (gtk_object_get_data (GTK_OBJECT (applet), "pixmap"));
+	eel_image_set_pixbuf_from_file_name (EEL_IMAGE (pixmap), properties->current_pixmap);	
+}
+
+static void
+wavelan_applet_animation_state (GtkWidget *applet) 
+{
+	Properties *properties;
+
+	properties = gtk_object_get_data (GTK_OBJECT (applet), "properties");
+
+	if (properties->flashing == FALSE) {
+		wavelan_applet_start_animation (applet);
+		properties->flashing = TRUE;
 	}
 }
 
@@ -175,41 +270,34 @@ wavelan_applet_update_state (GtkWidget *applet,
 			     long int noise)
 {
 	Properties *properties;
-	WaveLanState org_state, new_state;
-	double pct;
+	int percent;
 
 	/* Calculate the percentage based on the link quality */
 	if (level < 0) {
-		pct = -1;
+		percent = -1;
 	} else {
 		if (link<1) {
-			pct = 0;
+			percent = 0;
 		} else {
-			pct = (log (link) / log (92)) * 100.0;
+			percent = (int)rint ((log (link) / log (92)) * 100.0);
 		}
 	}
 	properties = gtk_object_get_data (GTK_OBJECT (applet), "properties");
-	org_state = GPOINTER_TO_INT (gtk_object_get_data (GTK_OBJECT (applet), "state"));
 
-	/* Set state */
-	new_state = NO_LINK;
-	if (pct < 0) {
-		new_state = BUSTED_LINK;
-	} else if (pct < 1) {
-		new_state = NO_LINK;
-	} else if (pct < 40) {
-		new_state = SOME_LINK;
-	} else if (pct < 60) {
-		new_state = OK_LINK;
-	} else if (pct < 80) {
-		new_state = GOOD_LINK;
-	} else if (pct > 80) {
-		new_state = REALLY_GOOD_LINK;
-	} 
+	if (percent < 0) {
+		gtk_object_set_data (GTK_OBJECT (applet), "animate_state", GINT_TO_POINTER (BUSTED_LINK));
+		wavelan_applet_animation_state (applet);
+	} else if (percent == 0) {
+		gtk_object_set_data (GTK_OBJECT (applet), "animate_state", GINT_TO_POINTER (NO_LINK));
+		wavelan_applet_animation_state (applet);
+	} else if (properties->flashing) {
+		gtk_object_set_data (GTK_OBJECT (applet), "animate_state", GINT_TO_POINTER (NONE));
+		wavelan_applet_stop_animation (applet);
+	}
 
-	gtk_object_set_data (GTK_OBJECT (applet), "state", GINT_TO_POINTER (new_state));
-	wavelan_applet_draw (applet, org_state, new_state, pct);
+	wavelan_applet_draw (applet, percent);
 
+/*
 	if (properties->show_dialogs) {
 		if (new_state == BUSTED_LINK && org_state != BUSTED_LINK) {
 			show_warning_dialog (_("Network device %s has disappeared."), device);
@@ -224,52 +312,140 @@ wavelan_applet_update_state (GtkWidget *applet,
 			show_message_dialog (_("Network device %s has connection."), device);
 		}
 	}
+*/
 	
 }
 
 static void
-wavelan_applet_load_theme (GtkWidget *applet) {
-	Properties *props;
-	char **full_pixmaps;  	
-	int i, j;
+wavelan_applet_load_theme_image (GtkWidget *applet, 
+				 Properties *properties,
+				 const char *themedir,
+				 const char *filename) 
+{
+	int j;
+	char *dot_pos = strrchr (filename, '.') + 1; /* only called if a previous strrchr worked */
 
-	props = gtk_object_get_data (GTK_OBJECT (applet), "properties");
-	full_pixmaps = gtk_object_get_data (GTK_OBJECT (applet), "pixmaps");
+	/* Check the allowed extensions */
+	for (j = 0; pixmap_extensions[j]; j++) {
+		if (strcasecmp (dot_pos, pixmap_extensions[j])==0) { 
+			int i;
+			int pixmap_offset_begin = 0;
+			int pixmap_offset_end = 0;
+			char *dupe;
+			gboolean check_range = FALSE;
 
-	if (full_pixmaps == NULL) {
-		full_pixmaps = g_new0 (char*, sizeof (pixmap_files)/sizeof (pixmap_files[0]));
-	}
-	for (i = 0; i < sizeof (pixmap_files)/sizeof (pixmap_files[0]); i++) {
-		char *tmp;
-		
-		for (j = 0; pixmap_extensions[j] != NULL; j++) {
-			tmp = g_strdup_printf ("%s/%s/%s.%s", 
-					       PACKAGE, props->theme, 
-					       pixmap_files[i], pixmap_extensions[j]);
-			full_pixmaps[i] = gnome_pixmap_file (tmp);
-			if (full_pixmaps[i]) {
-				/* g_message ("loading %s ok...", tmp); */
-				g_free (tmp);
-				break;
+			/* g_message ("Located theme image %s", filename); */
+			if (strncmp (filename, "signal-", 7) == 0) {
+				sscanf (filename, "signal-%d-%d.",
+					&pixmap_offset_begin, &pixmap_offset_end);
+				check_range = TRUE;
+			} else if (strncmp (filename, "no-link-", 8) == 0) {
+				properties->no_link_images = g_list_prepend (properties->no_link_images,
+									     g_strdup_printf ("%s/%s", 
+											      themedir, 
+											      filename));
+			} else if (strncmp (filename, "broken-", 7) == 0) {
+				properties->broken_images = g_list_prepend (properties->broken_images,
+									    g_strdup_printf ("%s/%s", 
+											     themedir, 
+											     filename));
+			} else {
+				/* uhm, not charging or battery or low, but an 
+				   image ? could be wrongly named */
+				show_warning_dialog ("Theme %s has an odd image.\n"
+						     "%s", 
+						     properties->theme, filename);
 			}
-			/* g_message ("loading %s failed...", tmp); */
-			g_free (tmp);
+
+			if (check_range) {
+				dupe = g_strdup_printf ("%s/%s", themedir, filename);
+				properties->images = g_list_prepend (properties->images,
+								     dupe);
+				for (i = pixmap_offset_begin; i <= pixmap_offset_end; i++) {
+					if (properties->pixmaps[i] != NULL) {
+						show_warning_dialog ("Probable image overlap in\n"
+								     "%s.", filename);
+						
+					} else {
+						properties->pixmaps[i] = dupe;
+					}
+				}
+			}
+
+		}
+	}	
+}
+
+static void
+wavelan_applet_load_theme (GtkWidget *applet) {
+	Properties *properties;
+	DIR *dir;
+	struct dirent *dirent;
+	char *pixmapdir;
+	char *themedir;
+
+	properties = gtk_object_get_data (GTK_OBJECT (applet), "properties");
+
+	pixmapdir = gnome_unconditional_pixmap_file (PACKAGE);
+	themedir = g_strdup_printf ("%s/%s", pixmapdir, properties->theme);
+	dir = opendir (themedir);
+
+	/* blank out */
+	if (properties->images) {
+		int j;
+		g_list_foreach (properties->no_link_images, (GFunc)g_free, NULL);
+		g_list_free (properties->no_link_images);
+		properties->no_link_images = NULL;
+
+		g_list_foreach (properties->broken_images, (GFunc)g_free, NULL);
+		g_list_free (properties->broken_images);
+		properties->broken_images = NULL;
+
+		g_list_foreach (properties->images, (GFunc)g_free, NULL);
+		g_list_free (properties->images);
+		properties->images = NULL;
+		for (j=0; j < 101; j++) {
+			properties->pixmaps[j] = NULL;
 		}
 	}
+
+	if (!dir) {
+		show_error_dialog (_("No themes installed"));
+	} else 
+		while ((dirent = readdir (dir)) != NULL) {
+			if (*dirent->d_name != '.') {
+				if (strrchr (dirent->d_name, '.')!=NULL) {
+					wavelan_applet_load_theme_image (applet, 
+									 properties,
+									 themedir,
+									 dirent->d_name);
+				}
+			}
+		}
+
+	if (properties->no_link_images && g_list_length (properties->no_link_images) > 1) {
+		properties->no_link_images = g_list_sort (properties->no_link_images,
+							  (GCompareFunc)g_strcasecmp);
+	}
 	
-	gtk_object_set_data (GTK_OBJECT (applet), "pixmaps", full_pixmaps);
+	if (properties->broken_images && g_list_length (properties->broken_images) > 1) {
+		properties->broken_images = g_list_sort (properties->broken_images,
+							 (GCompareFunc)g_strcasecmp);
+	}
+
+	g_free (pixmapdir);
+	g_free (themedir);
 }
 
 static void
 wavelan_applet_set_theme (GtkWidget *applet, gchar *theme) {
 	Properties *props = gtk_object_get_data (GTK_OBJECT (applet), "properties");
-	WaveLanState org_state = GPOINTER_TO_INT (gtk_object_get_data (GTK_OBJECT (applet), "state"));
 
 	g_free (props->theme);
 	props->theme = g_strdup (theme);
 	/* load the new images and update the gtk widgets */
 	wavelan_applet_load_theme (applet);
-	wavelan_applet_draw (global_applet, LAST_STATE, org_state, 0);  
+	wavelan_applet_draw (global_applet, 0);  
 }
 
 static void
@@ -357,7 +533,6 @@ static void
 wavelan_applet_read_device_state (GtkWidget *applet)
 {
 	Properties *properties;
-	WaveLanState state;
 	FILE *wireless;
 	
 	long int level, noise;
@@ -366,7 +541,6 @@ wavelan_applet_read_device_state (GtkWidget *applet)
 	char line[256];
 	
 	properties = gtk_object_get_data (GTK_OBJECT (applet), "properties");
-	state = GPOINTER_TO_INT (gtk_object_get_data (GTK_OBJECT (applet), "state"));
 	wireless = (FILE*) (gtk_object_get_data (GTK_OBJECT (applet), "file"));
 
 	/* resest list of available wavelan devices */
@@ -514,13 +688,14 @@ wavelan_applet_load_properties (GtkWidget *applet)
 	properties = gtk_object_get_data (GTK_OBJECT (applet), "properties");
 
 	gnome_config_push_prefix (APPLET_WIDGET (applet)->privcfgpath);
-	properties->device = gnome_config_get_string ("device=eth0");
-	properties->show_percent = gnome_config_get_bool ("show_percent=FALSE");
-	properties->show_dialogs = gnome_config_get_bool ("show_dialogs=FALSE");
-	properties->update_interval = gnome_config_get_int ("update_interval=2");
-	properties->text_smaller = gnome_config_get_int ("text_smaller=5");
-	properties->text_aa = gnome_config_get_bool ("text_aa=TRUE");
-	properties->theme = gnome_config_get_string ("theme=default");
+	properties->device = gnome_config_get_string ("wavelan/device=" CFG_DEVICE);
+	properties->show_percent = gnome_config_get_bool ("wavelan/show_percent=" CFG_SHOW_PERCENT);
+	properties->show_dialogs = gnome_config_get_bool ("wavelan/show_dialogs=" CFG_SHOW_DIALOGS);
+	properties->update_interval = gnome_config_get_int ("wavelan/update_interval=" CFG_UPDATE_INTERVAL);
+	properties->text_aa = gnome_config_get_bool ("wavelan/text_aa=" CFG_TEXT_AA);
+	properties->theme = gnome_config_get_string ("wavelan/theme=" CFG_THEME);
+
+	properties->text_smaller = 5;
 	gnome_config_pop_prefix ();
 }
 
@@ -531,23 +706,20 @@ wavelan_applet_save_properties (GtkWidget *applet,
 {
 	Properties *properties;
 	properties = gtk_object_get_data (GTK_OBJECT (applet), "properties");
-
-	if (properties) {
-		gnome_config_push_prefix (cfgpath);
-		
-		gnome_config_set_string ("device", properties->device);
-		gnome_config_set_bool ("show_percent", properties->show_percent);
-		gnome_config_set_bool ("show_dialogs", properties->show_dialogs);
-		gnome_config_set_int ("update_interval", properties->update_interval);
-		gnome_config_set_int ("text_smaller", properties->text_smaller);
-		gnome_config_set_bool ("text_aa", properties->text_aa);
-		gnome_config_set_string ("theme", properties->theme);
-		
-		gnome_config_pop_prefix ();
-		gnome_config_sync ();
-		gnome_config_drop_all ();
-	}
-  
+	g_assert (properties);
+	
+	gnome_config_push_prefix (cfgpath);
+	
+	gnome_config_set_string ("wavelan/device", properties->device);
+	gnome_config_set_bool ("wavelan/show_percent", properties->show_percent);
+	gnome_config_set_bool ("wavelan/show_dialogs", properties->show_dialogs);
+	gnome_config_set_int ("wavelan/update_interval", properties->update_interval);
+	gnome_config_set_bool ("wavelan/text_aa", properties->text_aa);
+	gnome_config_set_string ("wavelan/theme", properties->theme);
+	
+	gnome_config_pop_prefix ();
+	gnome_config_sync ();
+	gnome_config_drop_all ();
 }
 
 static void
@@ -598,6 +770,25 @@ static void
 wavelan_applet_option_change (GtkWidget *widget, gpointer user_data) {
 	GnomePropertyBox *box = GNOME_PROPERTY_BOX (user_data);
 	gnome_property_box_changed (box);
+}
+
+static void
+wavelan_applet_add_theme_menu (GtkWidget *applet,
+			       GtkWidget *property_box,
+			       GtkWidget *menu,
+			       const char *entry)
+{
+	GtkWidget *item;
+	item = gtk_menu_item_new_with_label (entry);
+	gtk_object_set_data_full (GTK_OBJECT (item), 
+				  "theme-selected",
+				  g_strdup (entry),
+				  g_free);
+	gtk_signal_connect (GTK_OBJECT (item),
+			    "activate",
+			    GTK_SIGNAL_FUNC (wavelan_applet_option_change),
+			    property_box);
+	gtk_menu_append (GTK_MENU (menu), item);
 }
 
 static void 
@@ -688,27 +879,21 @@ wavelan_applet_properties_dialog (GtkWidget *applet,
 
 		dir = opendir (pixmapdir);
 		/* scan the directory */
-		while ((dirent = readdir (dir)) != NULL) {
-			/* everything not a ./.. (I assume there's only themes dirs there 
-			   gets added to the menu list */
-			if (*dirent->d_name != '.') {
-				GtkWidget *item;
-				item = gtk_menu_item_new_with_label ((char*)dirent->d_name);
-				gtk_object_set_data_full (GTK_OBJECT (item), 
-							  "theme-selected",
-							  g_strdup (dirent->d_name),
-							  g_free);
-				gtk_signal_connect (GTK_OBJECT (item),
-						    "activate",
-						    GTK_SIGNAL_FUNC (wavelan_applet_option_change),
-						    pb);
-				gtk_menu_append (GTK_MENU (menu), item);
-				if (strcmp (properties->theme, dirent->d_name)==0) {
-					choice = idx;
+		if (!dir) {
+			wavelan_applet_add_theme_menu (applet, pb, menu, "no themes");
+		} else 
+			while ((dirent = readdir (dir)) != NULL) {
+				/* everything not a ./.. (I assume there's only themes dirs there 
+				   gets added to the menu list */
+				if (*dirent->d_name != '.') {
+					wavelan_applet_add_theme_menu (applet, pb, menu,
+								       (const char*)dirent->d_name);
+					if (strcmp (properties->theme, dirent->d_name)==0) {
+						choice = idx;
+					}
+					idx++;
 				}
-				idx++;
 			}
-		}
 		closedir (dir);
 		gtk_option_menu_set_menu (GTK_OPTION_MENU (theme), menu);
 		gtk_option_menu_set_history (GTK_OPTION_MENU (theme), choice);
@@ -809,14 +994,11 @@ wavelan_applet_new (GtkWidget *applet)
 {
 	GtkWidget *event_box;
 	GtkWidget *box;
-	char **full_pixmaps;  	
-
 
 	/* This is all the data that we associate with the applet instance */
 	Properties *properties;
 	GtkWidget *pixmap; 
 	GtkWidget *pct_label;
-	WaveLanState state;
 	guint timeout_handler_id;
 
 	properties = g_new0 (Properties, 1);
@@ -826,25 +1008,21 @@ wavelan_applet_new (GtkWidget *applet)
 	wavelan_applet_load_properties (applet);
 	wavelan_applet_load_theme (applet);
 
-	state = NO_LINK;  
 	event_box = gtk_event_box_new ();
 
-	gtk_object_set_data (GTK_OBJECT (applet), "state", GINT_TO_POINTER (state));
-
 	/* construct pixmap widget */
-	full_pixmaps = gtk_object_get_data (GTK_OBJECT (applet), "pixmaps");
-	pixmap = eel_image_new (full_pixmaps[state]);
+	pixmap = eel_image_new (properties->pixmaps[0]);
 	gtk_object_set_data (GTK_OBJECT (applet), "pixmap", pixmap);
 	gtk_widget_show_all (pixmap);
 
 	/* construct pct widget */
 	pct_label = eel_label_new (NULL);
 	eel_label_set_never_smooth (EEL_LABEL (pct_label), FALSE);
-	eel_label_set_is_smooth (EEL_LABEL (pct_label), properties->text_aa);
+	eel_label_set_is_smooth (EEL_LABEL (pct_label), properties->text_aa);       
 	eel_label_make_smaller (EEL_LABEL (pct_label), properties->text_smaller);
 	gtk_object_set_data (GTK_OBJECT (applet), "percent-label", pct_label);
 	properties->smooth_font_size = eel_label_get_smooth_font_size (EEL_LABEL (pct_label));
-	g_message ("properties->smooth_font_size = %d", properties->smooth_font_size);
+
 	if (properties->show_percent) {
 		gtk_widget_show_all (pct_label);
 	} else {
@@ -950,7 +1128,7 @@ applet_activator (CORBA_Object poa,
 	gtk_widget_show (global_applet);
 
 	/* make the applet draw a 0% strength */
-	wavelan_applet_draw (global_applet, LAST_STATE, NO_LINK, 0);  
+	wavelan_applet_draw (global_applet, 0);  
 
 	return applet_widget_corba_activate (global_applet, 
 					     (PortableServer_POA)poa, 

@@ -1,1 +1,1 @@
-SUBDIRS=default tard airport leds
+SUBDIRS=default airport

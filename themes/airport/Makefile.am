@@ -2,7 +2,7 @@ NULL=
 THEME=airport
 
 pixmapdir = $(datadir)/pixmaps/$(PACKAGE)/$(THEME)
-pixmap_DATA = busted-link.png no-link.png some-link.png ok-link.png good-link.png really-good-link.png
+pixmap_DATA = *.png
 
 
 EXTRA_DIST =		\

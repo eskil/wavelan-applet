@@ -1,29 +1,28 @@
 #
 # Note that this is NOT a relocatable package
-# $Id$
+# $Id: wavelan-applet.spec.in,v 1.2 2001/12/13 09:13:36 eskil Exp $
 #
 %define ver      @VERSION@
 %define rel      1
 %define prefix   @prefix@
 %define name	 @PACKAGE@
 
-Summary: gnome wavelan monitor applet
+Summary: GNOME WaveLan Applet
 Name: %name
 Version: %ver
 Release: %rel
 Copyright: LGPL
 Group: Applications/Communications
 Source: http://eskil.org/wavelan-applet/download/%name-%ver.tar.gz
-BuildRoot: /var/tmp/waveland
-Packager: Eskil Heyn Olsen <eskil@eskil.dk>
-URL: http://www.snot.dk
-Prereq: /sbin/install-info
+BuildRoot: /var/tmp/%{name}-%{version}
+Packager: Eskil Heyn Olsen <eskil@eskil.org>
+URL: http://eskil.org/wavelan-applet/
 Prefix: %{prefix}
 Docdir: %{prefix}/doc
 Requires: gnome-core >= 1.2.12
 
 %description
-blablabla
+A GNOME Panel applet that monitors WaveLan network signal strength.
 
 %changelog
 
@@ -35,39 +34,23 @@ blablabla
 %setup
 
 %build
-# Needed for snapshot releases.
-if [ ! -f configure ]; then
-  CFLAGS="$RPM_OPT_FLAGS" ./autogen.sh --prefix=%prefix --sysconfdir=$RPM_BUILD_ROOT/etc
-else
-  CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=%prefix --sysconfdir=$RPM_BUILD_ROOT/etc
-fi
-
-if [ "$SMP" != "" ]; then
-  (make "MAKE=make -k -j $SMP"; exit 0)
-  make
-else
-  make
-fi
+CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=%prefix --sysconfdir=$RPM_BUILD_ROOT/etc
+ make
 
 %install
 rm -rf $RPM_BUILD_ROOT
-make prefix=$RPM_BUILD_ROOT%{prefix} install
+%makeinstall
 
 %clean
-
-
-%post
-if ! grep %{prefix}/lib /etc/ld.so.conf > /dev/null ; then
-  echo "%{prefix}/lib" >> /etc/ld.so.conf
-fi
-
-/sbin/ldconfig
-
-%postun -p /sbin/ldconfig
+rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-, root, root)
 %doc AUTHORS COPYING ChangeLog NEWS README
-%{prefix}/
+%{prefix}/bin/wavelan-applet
+%{prefix}/share/applets/Monitors/wavelan-applet.desktop
+%{prefix}/share/pixmaps/wavelan-applet.png
+%{prefix}/share/pixmaps/wavelan-applet/*
+%{prefix}/share/wavelan-applet/*
 %config /etc/CORBA/servers/wavelan-applet.gnorba
 
