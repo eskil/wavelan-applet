@@ -1,0 +1,51 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2001-11-27 02:47-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: ENCODING\n"
+
+#: src/wavelan-applet.c:402
+msgid "No /proc/net/wireless"
+msgstr ""
+
+#: src/wavelan-applet.c:403
+msgid "Cannot read /proc/net/wireless"
+msgstr ""
+
+#: src/wavelan-applet.c:508
+msgid "WaveLan applet properties"
+msgstr ""
+
+#: src/wavelan-applet.c:647
+msgid "WaveLan Applet"
+msgstr ""
+
+#: src/wavelan-applet.c:649
+msgid "(C) 2001 Free Software Foundation "
+msgstr ""
+
+#: src/wavelan-applet.c:651
+msgid "blablabla"
+msgstr ""
+
+#: src/wavelan-applet.c:744
+msgid "Properties..."
+msgstr ""
+
+#: src/wavelan-applet.c:750
+msgid "About..."
+msgstr ""
+
+#: src/wavelan-applet.c:774 src/wavelan-applet.c:798
+msgid "Can't create applet!\n"
+msgstr ""

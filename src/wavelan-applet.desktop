@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=WaveLan
+Comment=Monitors WaveLan link quality
+Exec=wavelan-applet --activate-goad-server=wavelan-applet
+Icon=wavelan-applet.png
+Terminal=0
+Type=Application
