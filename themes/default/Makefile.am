@@ -1,7 +1,7 @@
 NULL=
 THEME=default
 
-pixmapdir = $(datadir)/pixmaps/$(PACKAGE)/$(THEME)
+pixmapdir = $(datadir)/$(PACKAGE)/themes/$(THEME)
 pixmap_DATA = no-link-0.xpm 	\
 	broken-0.xpm 		\
 	broken-1.xpm 		\

@@ -1,7 +1,7 @@
 NULL=
 THEME=wavelan-card
 
-pixmapdir = $(datadir)/pixmaps/$(PACKAGE)/$(THEME)
+pixmapdir = $(datadir)/$(PACKAGE)/themes/$(THEME)
 pixmap_DATA = no-link-0.png 	\
 	broken-0.png 		\
 	signal-1-40.png 	\

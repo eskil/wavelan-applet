@@ -1,0 +1,22 @@
+<oaf_info>
+	<oaf_server iid="OAFIID:GNOME_WaveLanApplet_Factory" type="exe" location="wavelan-applet">
+		<oaf_attribute name="repo_ids" type="stringv">
+			<item value="IDL:Bonobo/GenericFactory:1.0"/>
+			<item value="IDL:Bonobo/Unknown:1.0"/>
+		</oaf_attribute>
+		<oaf_attribute name="name" type="string" value="WaveLan Applet Factory"/>
+		<oaf_attribute name="description" type="string" value="Factory for wavelan applet"/>
+	</oaf_server>
+
+	<oaf_server iid="OAFIID:GNOME_WaveLanApplet" type="factory" location="OAFIID:GNOME_WaveLanApplet_Factory">
+		<oaf_attribute name="repo_ids" type="stringv">
+			<item value="IDL:GNOME/Vertigo/PanelAppletShell:1.0"/>
+			<item value="IDL:Bonobo/Control:1.0"/>
+			<item value="IDL:Bonobo/Unknown:1.0"/>
+		</oaf_attribute>
+		<oaf_attribute name="name" type="string" value="WaveLan Applet"/>
+		<oaf_attribute name="description" type="string" value="Panel applet that monitors battery state"/>
+		<oaf_attribute name="panel:category" type="string" value="Utility"/>
+		<oaf_attribute name="panel:icon" type="string" value="wavelan-applet.png"/>
+	</oaf_server>
+</oaf_info>

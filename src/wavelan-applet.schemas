@@ -1,0 +1,76 @@
+<gconfschemafile>
+	<schemalist>
+	
+	<schema>
+		<key>/schemas/apps/power-applet/prefs/show_time</key>
+		<owner>power-applet</owner>
+		<type>bool</type>
+		<default>false</default>
+		<locale name="C">
+			<short>Show time left</short>
+			<long>Show an estimate of how much time the battery can still supply power</long>
+		</locale>
+	</schema>
+
+	<schema>
+		<key>/schemas/apps/power-applet/prefs/show_percent</key>
+		<owner>power-applet</owner>
+		<type>bool</type>
+		<default>false</default>
+		<locale name="C">
+			<short>Show percent</short>
+		</locale>
+	</schema>
+
+	<schema>
+		<key>/schemas/apps/power-applet/prefs/show_ac</key>
+		<owner>power-applet</owner>
+		<type>bool</type>
+		<default>false</default>
+		<locale name="C">
+			<short>Show AC</short>
+		</locale>
+	</schema>
+
+	<schema>
+		<key>/schemas/apps/power-applet/prefs/show_full_dialog</key>
+		<owner>power-applet</owner>
+		<type>bool</type>
+		<default>false</default>
+		<locale name="C">
+			<short>Show full dialog</short>
+		</locale>
+	</schema>
+
+	<schema>
+		<key>/schemas/apps/power-applet/prefs/show_low_dialog</key>
+		<owner>power-applet</owner>
+		<type>bool</type>
+		<default>true</default>
+		<locale name="C">
+			<short>Show low dialog</short>
+		</locale>
+	</schema>
+
+	<schema>
+		<key>/schemas/apps/power-applet/prefs/low_threshold</key>
+		<owner>power-applet</owner>
+		<type>int</type>
+		<default>5</default>
+		<locale name="C">
+			<short>Low threshold</short>
+		</locale>
+	</schema>
+
+	<schema>
+		<key>/schemas/apps/power-applet/prefs/update_interval</key>
+		<owner>power-applet</owner>
+		<type>int</type>
+		<default>2</default>
+		<locale name="C">
+			<short>Low threshold</short>
+		</locale>
+	</schema>
+
+	</schemalist>
+</gconfschemafile>

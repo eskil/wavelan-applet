@@ -1,3 +1,15 @@
+2002-02-20  Eskil Heyn Olsen  <eskil@eskil.dk>
+
+	* README:
+	* configure.in:
+	* src/Makefile.am:
+	* src/wavelan-applet.c: (wavelan_applet_draw),
+	(wavelan_applet_about_cb):
+	* themes/airport/Makefile.am:
+	* themes/default/Makefile.am:
+	* themes/wavelan-card/Makefile.am:
+	Blablabla
+
 2001-12-18  Eskil Heyn Olsen  <eskil@eskil.dk>
 
 	* configure.in:

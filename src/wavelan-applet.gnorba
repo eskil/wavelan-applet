@@ -1,6 +1,0 @@
-[wavelan-applet]
-type=exe
-repo_id=IDL:GNOME/Applet:1.0
-description=wavelan applet
-location_info=wavelan-applet
-

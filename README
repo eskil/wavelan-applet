@@ -1,3 +1,12 @@
 Thanks to
 
 - Seth Vidal (skvidal at phy dot duke dot edu) for config patches for RH72.
+
+Q: I have a pixmap background, but the applet looks like shit, what's up ?
+A: Short: the panel is broken.
+   The libpanel-applets panel_applet_get_background supposedly returns a
+   gdk_pixmap that is the pixmap area behind the applet. Unfortunately,
+   it's often full of garbage, and it's not even the pixmap area that 
+   the applet covers, but looks like it's the top-left corner of the 
+   background pixmap. There it looks like crab, use a more uniform background
+   pixmap or a color.
