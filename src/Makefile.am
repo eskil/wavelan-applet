@@ -37,9 +37,10 @@ pixmap_DATA = wavelan-applet.png
 gnorbadir = $(sysconfdir)/CORBA/servers
 gnorba_DATA = wavelan-applet.gnorba
 
-EXTRA_DIST = 			\
-	$(glade_DATA)		\
-	$(sys_DATA)		\
-	$(pixmap_DATA)		\
-	$(gnorba_DATA)		\
+EXTRA_DIST = 				\
+	$(glade_DATA)			\
+	$(sys_DATA)			\
+	$(pixmap_DATA)			\
+	$(gnorba_DATA)			\
+	wavelan-applet-strings.c	\
 	$(NULL)

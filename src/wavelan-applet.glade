@@ -10,6 +10,8 @@
   <language>C</language>
   <gnome_support>True</gnome_support>
   <gettext_support>True</gettext_support>
+  <output_translatable_strings>True</output_translatable_strings>
+  <translatable_strings_file>wavelan-applet-strings.c</translatable_strings_file>
 </project>
 
 <widget>
@@ -42,7 +44,7 @@
     <widget>
       <class>GtkVBox</class>
       <name>vbox1</name>
-      <homogeneous>False</homogeneous>
+      <homogeneous>True</homogeneous>
       <spacing>0</spacing>
 
       <widget>
@@ -59,7 +61,7 @@
 	<widget>
 	  <class>GtkLabel</class>
 	  <name>label6</name>
-	  <label>Tema</label>
+	  <label>Theme</label>
 	  <justify>GTK_JUSTIFY_CENTER</justify>
 	  <wrap>False</wrap>
 	  <xalign>0.5</xalign>
@@ -91,7 +93,7 @@
 	<class>GtkCheckButton</class>
 	<name>pct_check_button</name>
 	<can_focus>True</can_focus>
-	<label>Vis procent</label>
+	<label>Show signal strength in percentage</label>
 	<active>False</active>
 	<draw_indicator>True</draw_indicator>
 	<child>
@@ -105,7 +107,7 @@
 	<class>GtkCheckButton</class>
 	<name>dialog_check_button</name>
 	<can_focus>True</can_focus>
-	<label>Vis dialogbokse</label>
+	<label>Show dialog boxes</label>
 	<active>False</active>
 	<draw_indicator>True</draw_indicator>
 	<child>
@@ -120,7 +122,7 @@
       <class>GtkLabel</class>
       <child_name>Notebook:tab</child_name>
       <name>label1</name>
-      <label>Udseende</label>
+      <label>Appearance</label>
       <justify>GTK_JUSTIFY_CENTER</justify>
       <wrap>False</wrap>
       <xalign>0.5</xalign>
@@ -134,40 +136,14 @@
       <name>table1</name>
       <rows>2</rows>
       <columns>2</columns>
-      <homogeneous>False</homogeneous>
+      <homogeneous>True</homogeneous>
       <row_spacing>0</row_spacing>
       <column_spacing>0</column_spacing>
 
       <widget>
 	<class>GtkLabel</class>
-	<name>label2</name>
-	<label>Enhed</label>
-	<justify>GTK_JUSTIFY_CENTER</justify>
-	<wrap>False</wrap>
-	<xalign>0</xalign>
-	<yalign>0.5</yalign>
-	<xpad>0</xpad>
-	<ypad>0</ypad>
-	<child>
-	  <left_attach>0</left_attach>
-	  <right_attach>1</right_attach>
-	  <top_attach>0</top_attach>
-	  <bottom_attach>1</bottom_attach>
-	  <xpad>0</xpad>
-	  <ypad>0</ypad>
-	  <xexpand>False</xexpand>
-	  <yexpand>False</yexpand>
-	  <xshrink>False</xshrink>
-	  <yshrink>False</yshrink>
-	  <xfill>True</xfill>
-	  <yfill>False</yfill>
-	</child>
-      </widget>
-
-      <widget>
-	<class>GtkLabel</class>
 	<name>label5</name>
-	<label>Opdaterings interval</label>
+	<label>Update interval (secs)</label>
 	<justify>GTK_JUSTIFY_CENTER</justify>
 	<wrap>False</wrap>
 	<xalign>0</xalign>
@@ -235,7 +211,33 @@
 	  <bottom_attach>2</bottom_attach>
 	  <xpad>0</xpad>
 	  <ypad>0</ypad>
-	  <xexpand>True</xexpand>
+	  <xexpand>False</xexpand>
+	  <yexpand>False</yexpand>
+	  <xshrink>False</xshrink>
+	  <yshrink>False</yshrink>
+	  <xfill>True</xfill>
+	  <yfill>False</yfill>
+	</child>
+      </widget>
+
+      <widget>
+	<class>GtkLabel</class>
+	<name>label2</name>
+	<label>Device</label>
+	<justify>GTK_JUSTIFY_CENTER</justify>
+	<wrap>False</wrap>
+	<xalign>0</xalign>
+	<yalign>0.5</yalign>
+	<xpad>0</xpad>
+	<ypad>0</ypad>
+	<child>
+	  <left_attach>0</left_attach>
+	  <right_attach>1</right_attach>
+	  <top_attach>0</top_attach>
+	  <bottom_attach>1</bottom_attach>
+	  <xpad>0</xpad>
+	  <ypad>0</ypad>
+	  <xexpand>False</xexpand>
 	  <yexpand>False</yexpand>
 	  <xshrink>False</xshrink>
 	  <yshrink>False</yshrink>
@@ -249,7 +251,7 @@
       <class>GtkLabel</class>
       <child_name>Notebook:tab</child_name>
       <name>label4</name>
-      <label>Advanceret</label>
+      <label>Advanced</label>
       <justify>GTK_JUSTIFY_CENTER</justify>
       <wrap>False</wrap>
       <xalign>0.5</xalign>

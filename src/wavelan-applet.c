@@ -138,8 +138,6 @@ wavelan_applet_update_state (GtkWidget *applet,
 	properties = gtk_object_get_data (GTK_OBJECT (applet), "properties");
 	org_state = GPOINTER_TO_INT (gtk_object_get_data (GTK_OBJECT (applet), "state"));
 
-	g_message ("device %s is %2.0f %2.0f %ld %ld", device, pct, link, level, noise);
-
 	/* Set state */
 	new_state = NO_LINK;
 	if (pct < 0) {
@@ -152,7 +150,7 @@ wavelan_applet_update_state (GtkWidget *applet,
 		new_state = OK_LINK;
 	} else if (pct < 80) {
 		new_state = GOOD_LINK;
-	} else if (pct > 75) {
+	} else if (pct > 80) {
 		new_state = REALLY_GOOD_LINK;
 	} 
 
@@ -161,16 +159,16 @@ wavelan_applet_update_state (GtkWidget *applet,
 
 	if (properties->show_dialogs) {
 		if (new_state == BUSTED_LINK && org_state != BUSTED_LINK) {
-			show_message_dialog ("Netværks enhed %s forsvundet.", device);
+			show_warning_dialog (_("Network device %s has disappeared."), device);
 		}
 		if (new_state != BUSTED_LINK && org_state == BUSTED_LINK) {
-			show_message_dialog ("Netværks enhed %s tilsluttet igen.", device);
+			show_message_dialog (_("Network device %s has reappeared."), device);
 		}
 		if (new_state == NO_LINK && org_state != NO_LINK) {
-			show_message_dialog ("Netværks enhed %s har mistet forbindelsen.", device);
+			show_warning_dialog (_("Network device %s has lost the connection."), device);
 		}
 		if (new_state != NO_LINK && org_state == NO_LINK) {
-			show_message_dialog ("Netværks enhed %s har fået forbindelse.", device);
+			show_message_dialog (_("Network device %s has connection."), device);
 		}
 	}
 	
@@ -190,7 +188,6 @@ wavelan_applet_load_theme (GtkWidget *applet) {
 	}
 	for (i = 0; i < sizeof (pixmap_files)/sizeof (pixmap_files[0]); i++) {
 		char *tmp = g_strdup_printf ("%s/%s/%s", PACKAGE, props->theme, pixmap_files[i]);
-		g_message ("applet_load_theme loading %d %s", i, tmp);
 		full_pixmaps[i] = gnome_unconditional_pixmap_file (tmp);
 		g_free (tmp);
 	}
@@ -278,7 +275,7 @@ wavelan_applet_read_device_state (GtkWidget *applet)
 		char *ptr;
 
 		fgets (line, 256, wireless);
-		//g_message ("line : %s", line);
+
 		if (feof (wireless)) {
 			break;
 		}
@@ -633,7 +630,6 @@ wavelan_applet_clicked_cb (GtkWidget *applet,
 			   GdkEventButton *e, 
 			   gpointer data)
 {
-	g_message ("klik");
 	return TRUE; 
 }
 
@@ -641,7 +637,7 @@ static void
 wavelan_applet_about_cb (AppletWidget *widget, gpointer data)
 {
 	GtkWidget *about;
-	const gchar *authors[] = {"Eskil Heyn Olsen <eskil@eskil.dk>",NULL};
+	const gchar *authors[] = {"Eskil Heyn Olsen <eskil@eskil.org>",NULL};
 	gchar version[] = VERSION;
 
 	about = gnome_about_new (_("WaveLan Applet"), 
@@ -668,7 +664,6 @@ wavelan_applet_save_session (GtkWidget *applet,
 static void
 wavelan_applet_destroy (GtkWidget *applet,gpointer horse)
 {
-	g_message ("dø nu");
 }
 
 static GtkWidget *

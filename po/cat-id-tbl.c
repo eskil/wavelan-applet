@@ -8,15 +8,26 @@
 
 const struct _msg_ent _msg_tbl[] = {
   {"", 1},
-  {"No /proc/net/wireless", 2},
-  {"Cannot read /proc/net/wireless", 3},
-  {"WaveLan applet properties", 4},
-  {"WaveLan Applet", 5},
-  {"(C) 2001 Free Software Foundation ", 6},
-  {"blablabla", 7},
-  {"Properties...", 8},
-  {"About...", 9},
-  {"Can't create applet!\n", 10},
+  {"Network device %s has disappeared.", 2},
+  {"Network device %s has reappeared.", 3},
+  {"Network device %s has lost the connection.", 4},
+  {"Network device %s has connection.", 5},
+  {"No /proc/net/wireless", 6},
+  {"Cannot read /proc/net/wireless", 7},
+  {"WaveLan applet properties", 8},
+  {"WaveLan Applet", 9},
+  {"(C) 2001 Free Software Foundation ", 10},
+  {"blablabla", 11},
+  {"Properties...", 12},
+  {"About...", 13},
+  {"Can't create applet!\n", 14},
+  {"Theme", 15},
+  {"Show signal strength in percentage", 16},
+  {"Show dialog boxes", 17},
+  {"Appearance", 18},
+  {"Update interval (secs)", 19},
+  {"Device", 20},
+  {"Advanced", 21},
 };
 
-int _msg_tbl_length = 10;
+int _msg_tbl_length = 21;
