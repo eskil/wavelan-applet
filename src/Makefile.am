@@ -7,6 +7,8 @@ INCLUDES = 							\
 	$(GNOME_INCLUDEDIR)					\
 	$(LIBGLADE_CFLAGS)					\
 	$(EEL_CFLAGS)						\
+	$(GNOME_VFS_CFLAGS)					\
+	$(GDK_PIXBUF_CFLAGS)					\
 	$(ORBIT_CFLAGS)						\
 	-DGNOMELOCALEDIR=\""$(datadir)/locale"\"		\
 	-DGNOME_ICONDIR=\""$(datadir)/pixmaps"\"		\
@@ -25,6 +27,8 @@ wavelan_applet_LDADD = 		\
 	$(INTLLIBS)		\
 	$(LIBGLADE_LIBS)	\
 	$(EEL_LIBS)		\
+	$(GNOME_VFS_CFLAGS)	\
+	$(GDK_PIXBUF_CFLAGS)	\
 	$(ORBIT_LIBS)		\
 	$(NULL)
 

@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2001-12-16 15:54-0800\n"
+"POT-Creation-Date: 2002-02-16 14:53-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -14,43 +14,45 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: ENCODING\n"
 
-#: src/wavelan-applet.c:413
+#: src/wavelan-applet.c:415
 msgid "No themes installed"
 msgstr ""
 
-#: src/wavelan-applet.c:677
+#: src/wavelan-applet.c:679
 msgid "No /proc/net/wireless"
 msgstr ""
 
-#: src/wavelan-applet.c:678
+#: src/wavelan-applet.c:680
 msgid "Cannot read /proc/net/wireless"
 msgstr ""
 
-#: src/wavelan-applet.c:813
+#: src/wavelan-applet.c:815
 msgid "WaveLan applet properties"
 msgstr ""
 
-#: src/wavelan-applet.c:966
+#: src/wavelan-applet.c:968
 msgid "WaveLan Applet"
 msgstr ""
 
-#: src/wavelan-applet.c:968
+#: src/wavelan-applet.c:970
 msgid "(C) 2001 Free Software Foundation "
 msgstr ""
 
-#: src/wavelan-applet.c:970
-msgid "blablabla"
+#: src/wavelan-applet.c:972
+msgid ""
+"Yet another applet that shows the\n"
+"waterlevel in Sortedamssøen."
 msgstr ""
 
-#: src/wavelan-applet.c:1064
+#: src/wavelan-applet.c:1067
 msgid "Properties..."
 msgstr ""
 
-#: src/wavelan-applet.c:1070
+#: src/wavelan-applet.c:1073
 msgid "About..."
 msgstr ""
 
-#: src/wavelan-applet.c:1094 src/wavelan-applet.c:1118
+#: src/wavelan-applet.c:1097 src/wavelan-applet.c:1121
 msgid "Can't create applet!\n"
 msgstr ""
 

@@ -14,7 +14,9 @@ const struct _msg_ent _msg_tbl[] = {
   {"WaveLan applet properties", 5},
   {"WaveLan Applet", 6},
   {"(C) 2001 Free Software Foundation ", 7},
-  {"blablabla", 8},
+  {"\
+Yet another applet that shows the\n\
+waterlevel in Sortedamssøen.", 8},
   {"Properties...", 9},
   {"About...", 10},
   {"Can't create applet!\n", 11},

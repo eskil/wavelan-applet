@@ -151,16 +151,18 @@ wavelan_applet_draw (GtkWidget *applet,
 	}
 
 	/* Update the percentage */
-	if (props->show_percent) {
+	/* if (props->show_percent) */ {
 		char *tmp;
 		if (percent >= 0) {
 			tmp = g_strdup_printf ("%2.0d%%", percent);
 		} else {
 			tmp = g_strdup_printf ("N/A");
 		}
-		applet_widget_set_tooltip (APPLET_WIDGET (applet),
-					   tmp);
-		eel_label_set_text (EEL_LABEL (pct_label), tmp);
+		if (g_strcasecmp (tmp, eel_label_get_text (EEL_LABEL (pct_label))) != 0) {
+			applet_widget_set_tooltip (APPLET_WIDGET (applet),
+						   tmp);
+			eel_label_set_text (EEL_LABEL (pct_label), tmp);
+		}
 		g_free (tmp);
 	}
 
@@ -967,7 +969,8 @@ wavelan_applet_about_cb (AppletWidget *widget, gpointer data)
 				version,
 				_("(C) 2001 Free Software Foundation "),
 				(const gchar**)authors,
-				_("blablabla"),
+				_("Yet another applet that shows the\n"
+				  "waterlevel in Sortedamssøen."),
 				NULL);
 	gtk_widget_show (about);
 

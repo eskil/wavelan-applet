@@ -1,1 +1,1 @@
-SUBDIRS=default airport
+SUBDIRS=default airport wavelan-card

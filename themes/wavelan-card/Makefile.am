@@ -1,5 +1,5 @@
 NULL=
-THEME=airport
+THEME=wavelan-card
 
 pixmapdir = $(datadir)/pixmaps/$(PACKAGE)/$(THEME)
 pixmap_DATA = no-link-0.png 	\
@@ -9,6 +9,7 @@ pixmap_DATA = no-link-0.png 	\
 	signal-61-80.png 	\
 	signal-81-100.png	\
 	$(NULL)
+
 
 
 EXTRA_DIST =		\
