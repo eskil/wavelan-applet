@@ -6,6 +6,7 @@ INCLUDES = 							\
 	-I$(top_srcdir)/intl 					\
 	$(GNOME_INCLUDEDIR)					\
 	$(LIBGLADE_CFLAGS)					\
+	$(EEL_CFLAGS)						\
 	$(ORBIT_CFLAGS)						\
 	-DGNOMELOCALEDIR=\""$(datadir)/locale"\"		\
 	-DGNOME_ICONDIR=\""$(datadir)/pixmaps"\"		\
@@ -23,6 +24,8 @@ wavelan_applet_LDADD = 		\
 	$(GNOME_APPLETS_LIBS)	\
 	$(INTLLIBS)		\
 	$(LIBGLADE_LIBS)	\
+	$(EEL_LIBS)		\
+	$(ORBIT_LIBS)		\
 	$(NULL)
 
 sysdir = $(datadir)/applets/Monitors

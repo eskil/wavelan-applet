@@ -24,10 +24,11 @@ const struct _msg_ent _msg_tbl[] = {
   {"Theme", 15},
   {"Show signal strength in percentage", 16},
   {"Show dialog boxes", 17},
-  {"Appearance", 18},
-  {"Update interval (secs)", 19},
-  {"Device", 20},
-  {"Advanced", 21},
+  {"Antialiase text", 18},
+  {"Appearance", 19},
+  {"Update interval (secs)", 20},
+  {"Device", 21},
+  {"Advanced", 22},
 };
 
-int _msg_tbl_length = 21;
+int _msg_tbl_length = 22;

@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2001-11-28 23:02-0800\n"
+"POT-Creation-Date: 2001-12-05 18:29-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -14,59 +14,59 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: ENCODING\n"
 
-#: src/wavelan-applet.c:162
+#: src/wavelan-applet.c:215
 #, c-format
 msgid "Network device %s has disappeared."
 msgstr ""
 
-#: src/wavelan-applet.c:165
+#: src/wavelan-applet.c:218
 #, c-format
 msgid "Network device %s has reappeared."
 msgstr ""
 
-#: src/wavelan-applet.c:168
+#: src/wavelan-applet.c:221
 #, c-format
 msgid "Network device %s has lost the connection."
 msgstr ""
 
-#: src/wavelan-applet.c:171
+#: src/wavelan-applet.c:224
 #, c-format
 msgid "Network device %s has connection."
 msgstr ""
 
-#: src/wavelan-applet.c:399
+#: src/wavelan-applet.c:503
 msgid "No /proc/net/wireless"
 msgstr ""
 
-#: src/wavelan-applet.c:400
+#: src/wavelan-applet.c:504
 msgid "Cannot read /proc/net/wireless"
 msgstr ""
 
-#: src/wavelan-applet.c:505
+#: src/wavelan-applet.c:622
 msgid "WaveLan applet properties"
 msgstr ""
 
-#: src/wavelan-applet.c:643
+#: src/wavelan-applet.c:781
 msgid "WaveLan Applet"
 msgstr ""
 
-#: src/wavelan-applet.c:645
+#: src/wavelan-applet.c:783
 msgid "(C) 2001 Free Software Foundation "
 msgstr ""
 
-#: src/wavelan-applet.c:647
+#: src/wavelan-applet.c:785
 msgid "blablabla"
 msgstr ""
 
-#: src/wavelan-applet.c:739
+#: src/wavelan-applet.c:886
 msgid "Properties..."
 msgstr ""
 
-#: src/wavelan-applet.c:745
+#: src/wavelan-applet.c:892
 msgid "About..."
 msgstr ""
 
-#: src/wavelan-applet.c:769 src/wavelan-applet.c:793
+#: src/wavelan-applet.c:916 src/wavelan-applet.c:940
 msgid "Can't create applet!\n"
 msgstr ""
 
@@ -88,17 +88,21 @@ msgid "Show dialog boxes"
 msgstr ""
 
 #: src/wavelan-applet-strings.c:10
-msgid "Appearance"
+msgid "Antialiase text"
 msgstr ""
 
 #: src/wavelan-applet-strings.c:11
-msgid "Update interval (secs)"
+msgid "Appearance"
 msgstr ""
 
 #: src/wavelan-applet-strings.c:12
-msgid "Device"
+msgid "Update interval (secs)"
 msgstr ""
 
 #: src/wavelan-applet-strings.c:13
+msgid "Device"
+msgstr ""
+
+#: src/wavelan-applet-strings.c:14
 msgid "Advanced"
 msgstr ""

@@ -7,6 +7,7 @@
 gchar *s = N_("Theme");
 gchar *s = N_("Show signal strength in percentage");
 gchar *s = N_("Show dialog boxes");
+gchar *s = N_("Antialiase text");
 gchar *s = N_("Appearance");
 gchar *s = N_("Update interval (secs)");
 gchar *s = N_("Device");

@@ -19,26 +19,33 @@
  */
 
 #include <config.h>
+
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <math.h>
+#include <dirent.h>
+
 #include <gnome.h>
 #include <libgnomeui/gnome-window-icon.h>
-#include <math.h>
-#include <gdk_imlib.h>
-#include "applet-widget.h"
+#include <applet-widget.h>
 #include <glade/glade.h>
-#include <dirent.h>
+#include <eel/eel-image.h>
+#include <eel/eel-label.h>
+#include <eel/eel-gdk-pixbuf-extensions.h>
 
 typedef struct {
 	gchar *device;
 	gchar *theme;
 	gboolean show_percent, show_dialogs;
 	gint update_interval;
+	gboolean text_aa;
 
+	gint text_smaller;
+	gint smooth_font_size;
 	GList *devices;
 	GList *themes;
 } Properties;
@@ -55,12 +62,19 @@ typedef enum {
 
 char *pixmap_files[] = 
 {
-    "/no-link.xpm",
-    "/some-link.xpm",
-    "/ok-link.xpm",
-    "/good-link.xpm",
-    "/really-good-link.xpm",
-    "/busted-link.xpm"
+    "no-link",
+    "some-link",
+    "ok-link",
+    "good-link",
+    "really-good-link",
+    "busted-link"
+};
+
+char *pixmap_extensions[] = 
+{
+	"png",
+	"xpm",
+	NULL
 };
 
 static GtkWidget *global_property_box = NULL;
@@ -76,8 +90,45 @@ static int wavelan_applet_timeout_handler (GtkWidget *applet);
 
 /******************************************************************/
 
+static void
+do_draw (GtkWidget *applet, gpointer data) {	
+	guchar *rgb;
+	int w, h, rowstride;
+	GdkPixbuf *pixbuf;
+	GdkColor colour;
+	EelImage *pixmap;
+	EelLabel *label;
+
+	pixmap = EEL_IMAGE (gtk_object_get_data (GTK_OBJECT (applet), "pixmap"));
+	label = EEL_LABEL (gtk_object_get_data (GTK_OBJECT (applet), "percent-label"));
+	applet_widget_get_rgb_bg (APPLET_WIDGET (applet), 
+				  &rgb, &w, &h,
+				  &rowstride);
+
+	pixbuf = gdk_pixbuf_new_from_data (rgb, GDK_COLORSPACE_RGB, FALSE, 8,
+					   w, h, rowstride, 
+					   (GdkPixbufDestroyNotify)g_free, NULL);
+	
+	eel_gdk_pixbuf_average_value (pixbuf, &colour);
+
+	/*
+	if (colour.red+colour.green+colour.blue < 32768*3) {
+		eel_label_set_text_color (label, 0xFFFFFF);
+	} else {
+		eel_label_set_text_color (label, 0x000000);
+	}
+	*/
+
+  	eel_image_set_tile_pixbuf (pixmap, pixbuf);
+	eel_label_set_tile_pixbuf (label, pixbuf);
+
+	gdk_pixbuf_unref (pixbuf);
+}
+
 static void 
-wavelan_applet_draw (GtkWidget *applet, WaveLanState state, double pct)
+wavelan_applet_draw (GtkWidget *applet, 
+		     WaveLanState org_state, WaveLanState new_state, 
+		     double pct)
 {
 	GtkWidget *pixmap;
 	GtkWidget *pct_label;
@@ -97,7 +148,7 @@ wavelan_applet_draw (GtkWidget *applet, WaveLanState state, double pct)
 	}
 
 	/* Update the percentage */
-	{
+	if (props->show_percent) {
 		char *tmp;
 		if (pct >= 0) {
 			tmp = g_strdup_printf ("%2.0f%%", pct);
@@ -106,12 +157,14 @@ wavelan_applet_draw (GtkWidget *applet, WaveLanState state, double pct)
 		}
 		applet_widget_set_tooltip (APPLET_WIDGET (applet),
 					   tmp);
-		gtk_label_set_text (GTK_LABEL (pct_label), tmp); 
+		eel_label_set_text (EEL_LABEL (pct_label), tmp);
 		g_free (tmp);
 	}
 
 	/* Update the image */
-	gnome_pixmap_load_file (GNOME_PIXMAP (pixmap), pixmaps[state]);  
+	if (org_state != new_state) {
+		eel_image_set_pixbuf_from_file_name (EEL_IMAGE (pixmap), pixmaps[new_state]);
+	}
 }
 
 static void
@@ -155,7 +208,7 @@ wavelan_applet_update_state (GtkWidget *applet,
 	} 
 
 	gtk_object_set_data (GTK_OBJECT (applet), "state", GINT_TO_POINTER (new_state));
-	wavelan_applet_draw (applet, new_state, pct);
+	wavelan_applet_draw (applet, org_state, new_state, pct);
 
 	if (properties->show_dialogs) {
 		if (new_state == BUSTED_LINK && org_state != BUSTED_LINK) {
@@ -178,7 +231,7 @@ static void
 wavelan_applet_load_theme (GtkWidget *applet) {
 	Properties *props;
 	char **full_pixmaps;  	
-	int i;
+	int i, j;
 
 	props = gtk_object_get_data (GTK_OBJECT (applet), "properties");
 	full_pixmaps = gtk_object_get_data (GTK_OBJECT (applet), "pixmaps");
@@ -187,9 +240,21 @@ wavelan_applet_load_theme (GtkWidget *applet) {
 		full_pixmaps = g_new0 (char*, sizeof (pixmap_files)/sizeof (pixmap_files[0]));
 	}
 	for (i = 0; i < sizeof (pixmap_files)/sizeof (pixmap_files[0]); i++) {
-		char *tmp = g_strdup_printf ("%s/%s/%s", PACKAGE, props->theme, pixmap_files[i]);
-		full_pixmaps[i] = gnome_unconditional_pixmap_file (tmp);
-		g_free (tmp);
+		char *tmp;
+		
+		for (j = 0; pixmap_extensions[j] != NULL; j++) {
+			tmp = g_strdup_printf ("%s/%s/%s.%s", 
+					       PACKAGE, props->theme, 
+					       pixmap_files[i], pixmap_extensions[j]);
+			full_pixmaps[i] = gnome_pixmap_file (tmp);
+			if (full_pixmaps[i]) {
+				/* g_message ("loading %s ok...", tmp); */
+				g_free (tmp);
+				break;
+			}
+			/* g_message ("loading %s failed...", tmp); */
+			g_free (tmp);
+		}
 	}
 	
 	gtk_object_set_data (GTK_OBJECT (applet), "pixmaps", full_pixmaps);
@@ -198,10 +263,13 @@ wavelan_applet_load_theme (GtkWidget *applet) {
 static void
 wavelan_applet_set_theme (GtkWidget *applet, gchar *theme) {
 	Properties *props = gtk_object_get_data (GTK_OBJECT (applet), "properties");
+	WaveLanState org_state = GPOINTER_TO_INT (gtk_object_get_data (GTK_OBJECT (applet), "state"));
+
 	g_free (props->theme);
 	props->theme = g_strdup (theme);
 	/* load the new images and update the gtk widgets */
 	wavelan_applet_load_theme (applet);
+	wavelan_applet_draw (global_applet, LAST_STATE, org_state, 0);  
 }
 
 static void
@@ -230,15 +298,51 @@ wavelan_applet_set_update_interval (GtkWidget *applet, int interval) {
 }
 
 static void
+wavelan_applet_set_text_smaller (GtkWidget *applet, gint how_much) {
+	Properties *props = gtk_object_get_data (GTK_OBJECT (applet), "properties");
+	GtkWidget *pct_label  = GTK_WIDGET (gtk_object_get_data (GTK_OBJECT (applet), "percent-label"));
+
+	props->text_smaller = how_much;
+	eel_label_make_smaller (EEL_LABEL (pct_label), props->text_smaller);
+	//props->smooth_font_size = eel_label_get_smooth_font_size (EEL_LABEL (pct_label));
+	do_draw (applet, NULL);
+}
+
+static void
+wavelan_applet_set_text_aa (GtkWidget *applet, gboolean text_aa) {
+	Properties *props = gtk_object_get_data (GTK_OBJECT (applet), "properties");
+	GtkWidget *pct_label  = GTK_WIDGET (gtk_object_get_data (GTK_OBJECT (applet), "percent-label"));
+
+	props->text_aa = text_aa;
+
+	if (props->show_percent) {
+		gtk_widget_hide_all (pct_label);
+	}
+
+	/* reeducate label */
+	eel_label_set_smooth_font_size (EEL_LABEL (pct_label), props->smooth_font_size);
+	eel_label_set_is_smooth (EEL_LABEL (pct_label), props->text_aa);
+
+	if (props->show_percent) {
+		gtk_widget_show_all (pct_label);
+	}
+}
+
+static void
 wavelan_applet_set_show_percent (GtkWidget *applet, gboolean show) {
 	Properties *props = gtk_object_get_data (GTK_OBJECT (applet), "properties");
 	GtkWidget *pct_label  = GTK_WIDGET (gtk_object_get_data (GTK_OBJECT (applet), "percent-label"));
 	props->show_percent = show;
 	if (props->show_percent) {
+		/* reeducate label */
+		eel_label_set_smooth_font_size (EEL_LABEL (pct_label), props->smooth_font_size);
+		eel_label_set_is_smooth (EEL_LABEL (pct_label), props->text_aa);
 		gtk_widget_show_all (pct_label);
 	} else {
+		//props->smooth_font_size = eel_label_get_smooth_font_size (EEL_LABEL (pct_label));
 		gtk_widget_hide_all (pct_label);
 	}
+	do_draw (applet, NULL);
 }
 
 static void
@@ -414,6 +518,8 @@ wavelan_applet_load_properties (GtkWidget *applet)
 	properties->show_percent = gnome_config_get_bool ("show_percent=FALSE");
 	properties->show_dialogs = gnome_config_get_bool ("show_dialogs=FALSE");
 	properties->update_interval = gnome_config_get_int ("update_interval=2");
+	properties->text_smaller = gnome_config_get_int ("text_smaller=5");
+	properties->text_aa = gnome_config_get_bool ("text_aa=TRUE");
 	properties->theme = gnome_config_get_string ("theme=default");
 	gnome_config_pop_prefix ();
 }
@@ -433,6 +539,8 @@ wavelan_applet_save_properties (GtkWidget *applet,
 		gnome_config_set_bool ("show_percent", properties->show_percent);
 		gnome_config_set_bool ("show_dialogs", properties->show_dialogs);
 		gnome_config_set_int ("update_interval", properties->update_interval);
+		gnome_config_set_int ("text_smaller", properties->text_smaller);
+		gnome_config_set_bool ("text_aa", properties->text_aa);
 		gnome_config_set_string ("theme", properties->theme);
 		
 		gnome_config_pop_prefix ();
@@ -462,6 +570,14 @@ wavelan_applet_apply_properties_cb (GtkWidget *pb, gpointer unused)
 	wavelan_applet_set_update_interval (global_applet, 
 					    gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (entry)));
 
+	entry = gtk_object_get_data (GTK_OBJECT (pb), "text-smaller");
+	wavelan_applet_set_text_smaller (global_applet, 
+					 gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (entry)));
+
+	entry = gtk_object_get_data (GTK_OBJECT (pb), "text-aa");
+	wavelan_applet_set_text_aa (global_applet, 
+				    gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (entry)));
+
 	entry = gtk_object_get_data (GTK_OBJECT (pb), "device-menu");
 	menu = gtk_menu_get_active (GTK_MENU (gtk_option_menu_get_menu (GTK_OPTION_MENU (entry))));
 	str = gtk_object_get_data (GTK_OBJECT (menu), "device-selected");
@@ -489,7 +605,8 @@ wavelan_applet_properties_dialog (GtkWidget *applet,
 				  gpointer data)
 {
 	GtkWidget *pb;
-	GtkWidget *theme, *pct, *dialog, *device, *interval;
+	GtkWidget *theme, *pct, *dialog, *device, *interval, *text_aa;
+	/* GtkWidget , *text_interval; */
 	Properties *properties;
 	static GnomeHelpMenuEntry help_entry = {"wavelan-applet","properties"};
 
@@ -508,6 +625,8 @@ wavelan_applet_properties_dialog (GtkWidget *applet,
 	dialog = glade_xml_get_widget (xml, "dialog_check_button");
 	device = glade_xml_get_widget (xml, "device_menu");
 	interval = glade_xml_get_widget (xml, "interval_spin");
+	/*text_interval = glade_xml_get_widget (xml, "text_interval_spin");*/
+	text_aa = glade_xml_get_widget (xml, "text_aa");
 
 	/* Set the show-percent thingy */
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (pct),
@@ -535,6 +654,25 @@ wavelan_applet_properties_dialog (GtkWidget *applet,
 			    pb);
 	gtk_object_set_data (GTK_OBJECT (pb), "update-interval-spin", interval);
 
+	/* Set the text resize thingy */
+/*
+	gtk_spin_button_set_value (GTK_SPIN_BUTTON (text_interval), properties->text_smaller);
+	gtk_signal_connect (GTK_OBJECT (text_interval),
+			    "changed",
+			    GTK_SIGNAL_FUNC (wavelan_applet_option_change),
+			    pb);
+	gtk_object_set_data (GTK_OBJECT (pb), "text-smaller", text_interval);
+*/
+
+
+	/* Set the show-percent thingy */
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (text_aa),
+				      properties->text_aa);
+	gtk_signal_connect (GTK_OBJECT (text_aa),
+			    "toggled",
+			    GTK_SIGNAL_FUNC (wavelan_applet_option_change),
+			    pb);
+	gtk_object_set_data (GTK_OBJECT (pb), "text-aa", text_aa);
 
 	/* Set the theme menu */
 	gtk_option_menu_remove_menu (GTK_OPTION_MENU (theme));
@@ -671,7 +809,6 @@ wavelan_applet_new (GtkWidget *applet)
 {
 	GtkWidget *event_box;
 	GtkWidget *box;
-	GtkStyle *pct_style;
 	char **full_pixmaps;  	
 
 
@@ -684,6 +821,8 @@ wavelan_applet_new (GtkWidget *applet)
 
 	properties = g_new0 (Properties, 1);
 	gtk_object_set_data (GTK_OBJECT (applet), "properties", properties);
+
+	/* this ensures that properties are loaded and 'properties' points to them */
 	wavelan_applet_load_properties (applet);
 	wavelan_applet_load_theme (applet);
 
@@ -694,16 +833,18 @@ wavelan_applet_new (GtkWidget *applet)
 
 	/* construct pixmap widget */
 	full_pixmaps = gtk_object_get_data (GTK_OBJECT (applet), "pixmaps");
-	pixmap = gnome_pixmap_new_from_file (full_pixmaps[state]);	
+	pixmap = eel_image_new (full_pixmaps[state]);
 	gtk_object_set_data (GTK_OBJECT (applet), "pixmap", pixmap);
 	gtk_widget_show_all (pixmap);
 
 	/* construct pct widget */
-	pct_label = gtk_label_new (NULL);
-	pct_style = gtk_style_copy (GTK_WIDGET (pct_label)->style);
-	pct_style->font = gdk_font_load ("6x9");
-	gtk_widget_set_style (GTK_WIDGET (pct_label), pct_style);
+	pct_label = eel_label_new (NULL);
+	eel_label_set_never_smooth (EEL_LABEL (pct_label), FALSE);
+	eel_label_set_is_smooth (EEL_LABEL (pct_label), properties->text_aa);
+	eel_label_make_smaller (EEL_LABEL (pct_label), properties->text_smaller);
 	gtk_object_set_data (GTK_OBJECT (applet), "percent-label", pct_label);
+	properties->smooth_font_size = eel_label_get_smooth_font_size (EEL_LABEL (pct_label));
+	g_message ("properties->smooth_font_size = %d", properties->smooth_font_size);
 	if (properties->show_percent) {
 		gtk_widget_show_all (pct_label);
 	} else {
@@ -711,9 +852,9 @@ wavelan_applet_new (GtkWidget *applet)
 	}
 	
 	/* pack */
-	box = gtk_hbox_new (TRUE, 1);
-	gtk_box_pack_start (GTK_BOX (box), pixmap, FALSE, FALSE, 1);
-	gtk_box_pack_start (GTK_BOX (box), pct_label, FALSE, FALSE, 1);
+	box = gtk_hbox_new (FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (box), pixmap, FALSE, FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (box), pct_label, FALSE, FALSE, 0);
 	/* note, I don't use show_all, because this way the percent label is only
 	   realised if it's enabled */
 	gtk_widget_show (box);
@@ -732,6 +873,12 @@ wavelan_applet_new (GtkWidget *applet)
 			   NULL);
 	gtk_signal_connect (GTK_OBJECT (applet),"destroy",
 			   GTK_SIGNAL_FUNC (wavelan_applet_destroy),NULL);
+
+	gtk_signal_connect (GTK_OBJECT (applet), "do_draw", 
+			    GTK_SIGNAL_FUNC (do_draw), 
+			    NULL);
+	applet_widget_send_draw(APPLET_WIDGET(applet), TRUE);
+	do_draw (applet, NULL);
 
 	applet_widget_register_stock_callback (APPLET_WIDGET (applet),
 					      "properties",
@@ -802,7 +949,8 @@ applet_activator (CORBA_Object poa,
 	applet_widget_add (APPLET_WIDGET (global_applet), pilot);
 	gtk_widget_show (global_applet);
 
-	wavelan_applet_draw (global_applet, NO_LINK, 0);  
+	/* make the applet draw a 0% strength */
+	wavelan_applet_draw (global_applet, LAST_STATE, NO_LINK, 0);  
 
 	return applet_widget_corba_activate (global_applet, 
 					     (PortableServer_POA)poa, 
